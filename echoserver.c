@@ -10,7 +10,7 @@
 #define BUFFER_SIZE 1024
 #define LISTEN_BACKLOG 5
 
-void *handleConnection(int client_socket) {
+void handleConnection(int client_socket) {
     char buffer[BUFFER_SIZE];
     while (1) {
         int bytes_read = read(client_socket, buffer, sizeof(buffer));
