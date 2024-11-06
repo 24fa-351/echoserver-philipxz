@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +11,9 @@
 #define BUFFER_SIZE 1024
 #define LISTEN_BACKLOG 5
 
-void handleConnection(int client_socket) {
+void *handleConnection(void *arg) {
+    int client_socket = *((int *)arg);
+    free(arg);
     char buffer[BUFFER_SIZE];
     while (1) {
         int bytes_read = read(client_socket, buffer, sizeof(buffer));
@@ -54,12 +57,18 @@ int main(int argc, char *argv[]) {
     socklen_t client_address_len = sizeof(client_address);
 
     while (1) {
-        int client_fd = accept(socket_fd, (struct sockaddr *)&client_address,
+        int* client_fd = malloc(sizeof(int));  // Allocate memory for client_fd
+        *client_fd = accept(socket_fd, (struct sockaddr *)&client_address,
                                &client_address_len);
-        handleConnection(client_fd);
-        printf("Client disconnected\n");
-    }
 
-    close(socket_fd);
+        // Create a new thread to handle the client connection
+        pthread_t thread_id;
+        if (pthread_create(&thread_id, NULL, handleConnection, client_fd) !=
+            0) {
+            perror("Failed to create thread");
+            close(*client_fd);
+            free(client_fd);
+        }
+    }
     return 0;
 }
